@@ -17,12 +17,13 @@ class CustomUserAdmin(UserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("username", "password1", "password2"),
+                "fields": ("username", "email", "password1", "password2"),
             },
         ),
     )
     form = CustomUserChangeForm
     add_form = CustomUserCreationForm
+    
 
     list_display = ['username', 'first_name', 'last_name', 'email', 'is_staff', 'birth_date', 'get_group_names']
     list_per_page = 10
