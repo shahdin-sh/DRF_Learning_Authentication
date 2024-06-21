@@ -6,26 +6,11 @@ from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from rest_framework.views import APIView
 
-from .serializers import UserRegistrationSerializer
+from django.contrib.auth import get_user_model
 
+from .serializers import UserRegistrationSerializer, UserSerializer
 
-class UserRegistrationView(APIView):
-    throttle_classes = [UserRateThrottle, AnonRateThrottle]
-
-    def post(self, request):
-        serializer = UserRegistrationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-
-        token_key = Token.objects.get(user=user).key
-
-        data  = {
-            "user": serializer.data,
-            "token_key": token_key
-        }
-
-        return Response(data, status=status.HTTP_201_CREATED)
-    
+User = get_user_model()
 
 class TokenCreateView(ObtainAuthToken):
     throttle_classes = [UserRateThrottle, AnonRateThrottle]
@@ -48,3 +33,37 @@ class TokenDestroyView(APIView):
         request.user.auth_token.delete()
         return Response(f'successfully logged out as {username}.', status=status.HTTP_200_OK)
 
+
+class UserRegistrationView(APIView):
+    throttle_classes = [UserRateThrottle, AnonRateThrottle]
+
+    def post(self, request):
+        serializer = UserRegistrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        token_key = Token.objects.get(user=user).key
+
+        data  = {
+            "user": serializer.data,
+            "token_key": token_key
+        }
+
+        return Response(data, status=status.HTTP_201_CREATED)
+
+
+class UserView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    def get(self, request):
+        user = User.objects.get(id=request.user.id)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+    
+    def put(self, reuqest):
+        user = User.objects.get(id=reuqest.user.id)
+        serializer = UserSerializer(user, reuqest.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
